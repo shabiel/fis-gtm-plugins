@@ -1,0 +1,3 @@
+change -segment DEFAULT  -block_size=4096 -allocation=5000 -extension=10000 -global_buffer_count=1000 -file_name=gtm.dat
+change -region DEFAULT -stdnull -key_size=1019 -record_size=4080 -journal=(before,file="gtm.mjl")
+exit
