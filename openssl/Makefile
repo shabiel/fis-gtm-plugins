@@ -1,3 +1,4 @@
+# I hate writing Makefiles!
 ifndef gtm_dist
   $(error $$gtm_dist not defined)
 endif

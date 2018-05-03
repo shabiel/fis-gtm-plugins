@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-05-03  5:30 PM
+opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-05-03  6:40 PM
  ;=============================
  ;Tests
  ;Test vectors from http://www.di-mgt.com.au/sha_testvectors.html
@@ -9,7 +9,7 @@ TEST I $T(^%ut)="" QUIT
  D EN^%ut($t(+0),3)
  QUIT
  ;
-T1 ; @TEST $$SHAN w/ null string
+T1 ; @TEST &openssl.md w/ null string
  N DATA S DATA=$T(TDATA1+1),DATA=$P(DATA,";;",2)
  N STR,REPS
  S STR=$P(DATA,":",2),REPS=$P(DATA,":",3)
@@ -50,7 +50,7 @@ TDATA1 ; @DATA
  ;;hash:512:CF83E135 7EEFB8BD F1542850 D66D8007 D620E405 0B5715DC 83F4A921 D36CE9CE 47D0D13C 5D85F2B0 FF8318D2 877EEC2F 63B931BD 47417A81 A538327A F927DA3E
  ;;-1
  ;
-T2 ; @TEST $$SHAN w/ string of abc
+T2 ; @TEST &openssl.md w/ string of abc
  N DATA S DATA=$T(TDATA2+1),DATA=$P(DATA,";;",2)
  N STR,REPS
  S STR=$P(DATA,":",2),REPS=$P(DATA,":",3)
@@ -90,7 +90,7 @@ TDATA2 ; @DATA
  ;;hash:512:DDAF35A1 93617ABA CC417349 AE204131 12E6FA4E 89A97EA2 0A9EEEE6 4B55D39A 2192992A 274FC1A8 36BA3C23 A3FEEBBD 454D4423 643CE80E 2A9AC94F A54CA49F
  ;;-1
  ;
-T3 ; @TEST $$SHAN w/ long string
+T3 ; @TEST &openssl.md w/ long string
  N DATA S DATA=$T(TDATA3+1),DATA=$P(DATA,";;",2)
  N STR,REPS
  S STR=$P(DATA,":",2),REPS=$P(DATA,":",3)
@@ -130,7 +130,7 @@ TDATA3 ; @DATA
  ;;hash:512:204A8FC6 DDA82F0A 0CED7BEB 8E08A416 57C16EF4 68B228A8 279BE331 A703C335 96FD15C1 3B1B07F9 AA1D3BEA 57789CA0 31AD85C7 A71DD703 54EC6312 38CA3445
  ;;-1
  ;
-T4 ; @TEST $$SHAN w/ even longer string
+T4 ; @TEST &openssl.md w/ even longer string
  N DATA S DATA=$T(TDATA4+1),DATA=$P(DATA,";;",2)
  N STR,REPS
  S STR=$P(DATA,":",2),REPS=$P(DATA,":",3)
@@ -170,7 +170,7 @@ TDATA4 ; @DATA
  ;;hash:512:8E959B75 DAE313DA 8CF4F728 14FC143F 8F7779C6 EB9F7FA1 7299AEAD B6889018 501D289E 4900F7E4 331B99DE C4B5433A C7D329EE B6DD2654 5E96E55B 874BE909
  ;;-1
  ;
-T5 ; @TEST $$LSHAN w/ 1MiB str of 'a'
+T5 ; @TEST &openssl.init, .add, .finish w/ 1MiB str of 'a'
  N DATA S DATA=$T(TDATA5+1),DATA=$P(DATA,";;",2)
  N STR,REPS
  S STR=$P(DATA,":",2),REPS=$P(DATA,":",3)
@@ -210,6 +210,25 @@ TDATA5 ; @DATA
  ;;hash:384:9D0E1809 716474CB 086E834E 310A4A1C ED149E9C 00F24852 7972CEC5 704C2A5B 07B8B3DC 38ECC4EB AE97DDD8 7F3D8985
  ;;hash:512:E718483D 0CE76964 4E2E42C7 BC15B463 8E1F98B1 3B204428 5632A803 AFA973EB DE0FF244 877EA60A 4CB0432C E577C31B EB009C5C 2C49AA2E 4EADB217 AD8CC09B
  ;;-1
+TERR2 ; @TEST &openssl.md w/ null hash (Error #2)
+ N ECODE
+ D
+ . N $ET S $ET="S ECODE=$EC,$EC="""""
+ . s %=$&openssl.md("aaa","",.SHA)
+ D CHKEQ^%ut(ECODE,",Z150376818,")
+ quit
+ ;
+TERR3 ; @TEST &openssl.md with fake hash (Error #3)
+ N ECODE
+ D
+ . N $ET S $ET="S ECODE=$EC,$EC="""""
+ . s %=$&openssl.md("aaa","sha8",.SHA)
+ D CHKEQ^%ut(ECODE,",Z150376818,")
+ quit
+ ;
+ ; I cannot test errors 1, 4, 5. They mean something in GT.M or Openssl has gone
+ ; awry.
+ ;
 CHASHLEN(HASHLEN) ;Make sure the hash length is one of the acceptable
  ;values.
  I HASHLEN=160 Q 1

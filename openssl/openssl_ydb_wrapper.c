@@ -1,6 +1,6 @@
 #include <string.h>
 #include <openssl/evp.h>
-#include "gtmxc_types.h"
+#include "openssl_ydb_wrapper.h"
 
 /* Author: Sam Habiel, Pharm.D. (c) 2018
  * Licensed under Apache 2.0 */
@@ -30,8 +30,8 @@
  * output: pass by reference */
 gtm_status_t openssl_md(int argc, gtm_char_t *input, gtm_char_t *digest, gtm_char_t *output)
 {
-  if (argc != 3) return (gtm_status_t)-1;
-  if (!digest) return (gtm_status_t)-4;
+  if (argc != 3) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_WRONGARGS;
+  if (!digest) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_DIGEST_NOT_SPECIFIED;
 
   EVP_MD_CTX *mdctx;
   const EVP_MD *md;
@@ -42,14 +42,14 @@ gtm_status_t openssl_md(int argc, gtm_char_t *input, gtm_char_t *digest, gtm_cha
 
   md = EVP_get_digestbyname((char *)digest);
   
-  if (!md) return (gtm_status_t)-5;
+  if (!md) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_DIGEST_NOT_FOUND;
 
   mdctx = EVP_MD_CTX_create();
-  if (!mdctx) return (gtm_status_t)-6;
+  if (!mdctx) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
 
-  if (1 != EVP_DigestInit_ex(mdctx, md, NULL)) return (gtm_status_t)-6;
-  if (1 != EVP_DigestUpdate(mdctx, (unsigned char *)input, strlen((char *)input))) return (gtm_status_t)-6;
-  if (1 != EVP_DigestFinal_ex(mdctx, md_value, &md_len)) return (gtm_status_t)-6;
+  if (1 != EVP_DigestInit_ex(mdctx, md, NULL)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  if (1 != EVP_DigestUpdate(mdctx, (unsigned char *)input, strlen((char *)input))) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  if (1 != EVP_DigestFinal_ex(mdctx, md_value, &md_len)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
 
   EVP_MD_CTX_destroy(mdctx);
 
@@ -64,12 +64,12 @@ gtm_status_t openssl_md(int argc, gtm_char_t *input, gtm_char_t *digest, gtm_cha
   }
   hexOutput[hexOutputSize - 1] = 0;
   
-  if (NULL == strncpy(output, hexOutput, hexOutputSize)) return (gtm_status_t)-7;
+  if (NULL == strncpy(output, hexOutput, hexOutputSize)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_STRNCPY_ERROR;
 
   /* Call this once before exit. */
   EVP_cleanup();
 
-  return (gtm_status_t)0;
+  return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
 
 EVP_MD_CTX *mdctx;
@@ -82,21 +82,21 @@ EVP_MD_CTX *mdctx;
  */
 gtm_status_t openssl_md_init(int argc, gtm_char_t *digest) 
 {
-  if (argc != 1) return (gtm_status_t)-1;
-  if (!digest) return (gtm_status_t)-4;
+  if (argc != 1) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_WRONGARGS;
+  if (!digest) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_DIGEST_NOT_SPECIFIED;
 
   OpenSSL_add_all_digests();
 
   const EVP_MD *md;
   md = EVP_get_digestbyname((char *)digest);
   
-  if(!md) return (gtm_status_t)-5;
+  if(!md) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_DIGEST_NOT_FOUND;
 
   mdctx = EVP_MD_CTX_create();
-  if (!mdctx) return (gtm_status_t)-6;
+  if (!mdctx) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
 
-  if (1 != EVP_DigestInit_ex(mdctx, md, NULL)) return (gtm_status_t)-6;
-  return (gtm_status_t)0;
+  if (1 != EVP_DigestInit_ex(mdctx, md, NULL)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
 
 /* Inputs:
@@ -107,9 +107,9 @@ gtm_status_t openssl_md_init(int argc, gtm_char_t *digest)
  */
 gtm_status_t openssl_md_add(int argc, gtm_char_t *input) 
 {
-  if (argc != 1) return (gtm_status_t)-1;
-  if (1 != EVP_DigestUpdate(mdctx, (unsigned char *)input, strlen((char *)input))) return (gtm_status_t)-6;
-  return (gtm_status_t)0;
+  if (argc != 1) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_WRONGARGS;
+  if (1 != EVP_DigestUpdate(mdctx, (unsigned char *)input, strlen((char *)input))) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
 
 /* Output: by reference
@@ -123,7 +123,7 @@ gtm_status_t openssl_md_finish(int argc, gtm_char_t *output)
   unsigned char md_value[EVP_MAX_MD_SIZE];
   unsigned int md_len;
 
-  if (1 != EVP_DigestFinal_ex(mdctx, md_value, &md_len)) return (gtm_status_t)-6;
+  if (1 != EVP_DigestFinal_ex(mdctx, md_value, &md_len)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
   EVP_MD_CTX_destroy(mdctx);
 
   int hexOutputSize = md_len*2+1;
@@ -136,9 +136,9 @@ gtm_status_t openssl_md_finish(int argc, gtm_char_t *output)
   }
   hexOutput[hexOutputSize - 1] = 0;
   
-  if (NULL == strncpy(output, hexOutput, hexOutputSize)) return (gtm_status_t)-7;
+  if (NULL == strncpy(output, hexOutput, hexOutputSize)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_STRNCPY_ERROR;
 
   EVP_cleanup();
 
-  return (gtm_status_t)0;
+  return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
