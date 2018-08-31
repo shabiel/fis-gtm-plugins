@@ -31,6 +31,7 @@ install: all
 
 test: all compile
 	-@(gtmroutines=r GTMXC_openssl=$(PWD)/openssl_ydb_wrapper.xc $(DISTDIR)/mumps -run opensslPluginTests)
+	-@(echo '')
 
 .PHONY: compile
 compile:
