@@ -18,7 +18,7 @@ openssl_ydb_wrapper.xc:	openssl_ydb_wrapper.xc_proto
 	echo './libopenssl_ydb_wrapper.so' > $@
 	cat $^ >> $@
 
-debug:	CFLAGS += -g
+debug:	CFLAGS += -O0 -g
 debug:	all
 
 install: all
