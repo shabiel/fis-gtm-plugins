@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-05-03  6:40 PM
+opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-08-31  11:08 AM
  ;=============================
  ;Tests
  ;Test vectors from http://www.di-mgt.com.au/sha_testvectors.html
@@ -210,6 +210,15 @@ TDATA5 ; @DATA
  ;;hash:384:9D0E1809 716474CB 086E834E 310A4A1C ED149E9C 00F24852 7972CEC5 704C2A5B 07B8B3DC 38ECC4EB AE97DDD8 7F3D8985
  ;;hash:512:E718483D 0CE76964 4E2E42C7 BC15B463 8E1F98B1 3B204428 5632A803 AFA973EB DE0FF244 877EA60A 4CB0432C E577C31B EB009C5C 2C49AA2E 4EADB217 AD8CC09B
  ;;-1
+ ;
+T6 ; @TEST &openssl.base64e & &openssl.base64d aaa
+ N B64,% S %=$&openssl.base64e("aaa",.B64)
+ D CHKEQ^%ut(%,0)
+ D CHKEQ^%ut(B64,"YWFh")
+ N D64,% S %=$&openssl.base64d(B64,.D64)
+ D CHKEQ^%ut(D64,"aaa")
+ QUIT
+ ;
 TERR2 ; @TEST &openssl.md w/ null hash (Error #2)
  N ECODE
  D

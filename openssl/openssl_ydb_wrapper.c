@@ -142,3 +142,38 @@ gtm_status_t openssl_md_finish(int argc, gtm_char_t *output)
 
   return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
+
+/* Base 64 Encode/Decode
+ * Output: by reference (up to 1M bytes)
+ * Input: string to base64 encode
+ *
+ * call with do &openssl.base64e(input,.zzz)
+ *           &  &openssl.base64d(input,.zzz)
+ */
+gtm_status_t openssl_base64e(int argc, gtm_char_t* input, gtm_char_t* output)
+{
+  if (argc != 2) return (gtm_status_t)-1;
+  int bytesEncoded = EVP_EncodeBlock((unsigned char *)output, (const unsigned char *)input, strlen(input));
+  if (bytesEncoded < 1) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  output[bytesEncoded+1] = 0; /* zero terminate string */
+  return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
+}
+
+gtm_status_t openssl_base64d(int argc, gtm_char_t* input, gtm_char_t* output)
+{
+  if (argc != 2) return (gtm_status_t)-1;
+  int bytesDecoded = EVP_DecodeBlock((unsigned char *)output, (const unsigned char *)input, strlen(input));
+  if (bytesDecoded == -1) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  output[bytesDecoded+1] = 0; /* zero terminate string */
+  return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
+}
+
+/* This is just for testing */
+/* cc -I $gtm_dist -ansi -g -O0 -Wall -fPIC openssl_ydb_wrapper.c -o openssl_ydb_wrapper -lcrypto */
+int main()
+{
+  char input[4] = "aaa";
+  char output[32555];
+  openssl_base64e(2, input, output);
+  printf("%s", output);
+}
