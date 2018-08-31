@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-08-31  11:08 AM
+opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-08-31  2:08 PM
  ;=============================
  ;Tests
  ;Test vectors from http://www.di-mgt.com.au/sha_testvectors.html
@@ -217,6 +217,27 @@ T6 ; @TEST &openssl.base64e & &openssl.base64d aaa
  D CHKEQ^%ut(B64,"YWFh")
  N D64,% S %=$&openssl.base64d(B64,.D64)
  D CHKEQ^%ut(D64,"aaa")
+ QUIT
+ ;
+T7 ; @TEST &openssl.crypt w/ AES-128-CBC
+ ; You will get the same output as typing:
+ ; echo -n "aaa" | openssl enc -e -aes-128-cbc -K 30313233343536373839616263646546 -iv 31323334353637383837363534333231
+ N IN,OUT,OUT2
+ S IN="aaa"
+ N %
+ S %=$&openssl.crypt(IN,"AES-128-CBC","0123456789abcdeF","1234567887654321",1,.OUT)
+ ; This doesn't exactly work...; but is really close
+ ; D CHKEQ^%ut(OUT,"?"_$C(138)_"l"_$C(143,135)_"r?!:??G???")
+ S %=$&openssl.crypt(OUT,"AES-128-CBC","0123456789abcdeF","1234567887654321",0,.OUT2)
+ D CHKEQ^%ut(OUT2,IN)
+ quit
+ ;
+T8 ; @TEST &openssl.crypt w/ AES-256-CBC against the SCANDAL!
+ N SECRET S SECRET="Alice and Bob had Sex!"
+ N X,Y,%
+ S %=$&openssl.crypt(SECRET,"AES-256-CBC","ABCDABCDABCDABCD","DCBADCBADCBADCBA",1,.X)
+ S %=$&openssl.crypt(X,"AES-256-CBC","ABCDABCDABCDABCD","DCBADCBADCBADCBA",0,.Y)
+ D CHKEQ^%ut(SECRET,Y)
  QUIT
  ;
 TERR2 ; @TEST &openssl.md w/ null hash (Error #2)
