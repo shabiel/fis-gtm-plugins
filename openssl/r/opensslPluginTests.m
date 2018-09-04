@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-08-31  2:08 PM
+opensslPluginTests ; OSE/SMH - SHA secure hash routines tests ;2018-09-04  10:43 AM
  ;=============================
  ;Tests
  ;Test vectors from http://www.di-mgt.com.au/sha_testvectors.html
@@ -226,8 +226,6 @@ T7 ; @TEST &openssl.crypt w/ AES-128-CBC
  S IN="aaa"
  N %
  S %=$&openssl.crypt(IN,"AES-128-CBC","0123456789abcdeF","1234567887654321",1,.OUT)
- ; This doesn't exactly work...; but is really close
- ; D CHKEQ^%ut(OUT,"?"_$C(138)_"l"_$C(143,135)_"r?!:??G???")
  S %=$&openssl.crypt(OUT,"AES-128-CBC","0123456789abcdeF","1234567887654321",0,.OUT2)
  D CHKEQ^%ut(OUT2,IN)
  quit
@@ -235,8 +233,8 @@ T7 ; @TEST &openssl.crypt w/ AES-128-CBC
 T8 ; @TEST &openssl.crypt w/ AES-256-CBC against the SCANDAL!
  N SECRET S SECRET="Alice and Bob had Sex!"
  N X,Y,%
- S %=$&openssl.crypt(SECRET,"AES-256-CBC","ABCDABCDABCDABCD","DCBADCBADCBADCBA",1,.X)
- S %=$&openssl.crypt(X,"AES-256-CBC","ABCDABCDABCDABCD","DCBADCBADCBADCBA",0,.Y)
+ S %=$&openssl.crypt(SECRET,"AES-256-CBC","DCBADCBADCBADCBADCBADCBADCBADCBA","ABCDABCDABCDABCD",1,.X)
+ S %=$&openssl.crypt(X,"AES-256-CBC","DCBADCBADCBADCBADCBADCBADCBADCBA","ABCDABCDABCDABCD",0,.Y)
  D CHKEQ^%ut(SECRET,Y)
  QUIT
  ;

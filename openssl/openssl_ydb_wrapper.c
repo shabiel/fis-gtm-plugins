@@ -167,12 +167,25 @@ gtm_status_t openssl_base64d(int argc, gtm_char_t* input, gtm_char_t* output)
   return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
 
+void cleanup(EVP_CIPHER_CTX *ctx)
+{
+  ERR_free_strings();
+  EVP_CIPHER_CTX_free(ctx);
+}
+
 gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_name, gtm_char_t *key, gtm_char_t *IV, gtm_long_t mode, gtm_string_t *output)
 {
-	/* We have to use gtm_string_t for input and output b/c encrypted data can contained embedded zeros */
+  /* We have to use gtm_string_t for input and output b/c encrypted data can contained embedded zeros */
+
+	int ciphertext_len; /* temp variable for incrementing into output */
+
   /* Sanity checks */
+	
   if (argc != 6)    return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_WRONGARGS;
   if (!cipher_name) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_CIPHER_NOT_SPECIFIED;
+
+  /* Load error strings for printing to stderr */
+  ERR_load_crypto_strings();
 
   /* Get cipher pointer */
   OpenSSL_add_all_algorithms();
@@ -185,27 +198,41 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
   ctx = EVP_CIPHER_CTX_new();
   if (!ctx) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
 
-  /* Encrypt */
-  if (1 != EVP_CipherInit_ex(ctx, cipher, NULL, (const unsigned char *)key, (const unsigned char *)IV, (int)mode))
+  /* Init1 to check key lengths on the context */
+  EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, (int)mode);
+  if (strlen(key)  != EVP_CIPHER_CTX_key_length(ctx)) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_KEYLEN_ERROR;
+  if (strlen(IV)   != EVP_CIPHER_CTX_iv_length(ctx))  return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_KEYLEN_ERROR;
+
+  /* Set key and IV into the context */
+  if (!EVP_CipherInit_ex(ctx, NULL, NULL, (const unsigned char *)key, (const unsigned char *)IV, (int)mode))
   {
-    EVP_CIPHER_CTX_free(ctx);
+    cleanup(ctx);
     return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
   }
   
-  if (1 != EVP_CipherUpdate(ctx, (unsigned char *)output->address, (int *)&output->length, (const unsigned char *)input->address, input->length))
+  /* Encrypt/Decrypt */
+  if (!EVP_CipherUpdate(ctx, (unsigned char *)output->address, &ciphertext_len, (const unsigned char *)input->address, input->length))
   {
-    EVP_CIPHER_CTX_free(ctx);
-    return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
-  }
-  
-  if (1 != EVP_CipherFinal_ex(ctx, (unsigned char *)output->address, (int *)&output->length))
-  {
-		ERR_print_errors_fp(stderr);
-    EVP_CIPHER_CTX_free(ctx);
+    cleanup(ctx);
     return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
   }
 	
-  EVP_CIPHER_CTX_free(ctx);
+	/* Set current length */
+	output->length = ciphertext_len;
+  
+  /* Finish */
+  if (!EVP_CipherFinal_ex(ctx, (unsigned char *)output->address + output->length, &ciphertext_len))
+  {
+    ERR_print_errors_fp(stderr);
+    cleanup(ctx);
+    return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
+  }
+  
+	/* increment length of output */
+	output->length += ciphertext_len;
+
+	/* Clean and return */
+  cleanup(ctx);
   return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
 
@@ -213,31 +240,30 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
 /* cc -I $gtm_dist -ansi -g -O0 -Wall -fPIC openssl_ydb_wrapper.c -o openssl_ydb_wrapper -lcrypto */
 int main()
 {
-	ERR_load_crypto_strings();
-	/* The follow below is equivalent to:
-	 * echo -n "aaa" | openssl enc -e -aes-128-cbc -K 30313233343536373839616263646546 -iv 31323334353637383837363534333231 */
-	size_t output_size = 32768;
-	gtm_string_t input;
-	input.length  = strlen("aaa");
-	input.address = "aaa";
+  /* The follow below is equivalent to:
+   * echo -n "aaa" | openssl enc -e -aes-128-cbc -K 30313233343536373839616263646546 -iv 31323334353637383837363534333231 */
+  size_t output_size = 32768;
+  gtm_string_t input;
+  input.length  = strlen("aaa") + 1;
+  input.address = "aaa";
   char cipher[] = "AES-128-CBC";
-  char key[] = "0123456789abcdeF";
+  char key[] = "0123456789abcdef";
   char iv[] = "1234567887654321";
-	gtm_string_t output;
-	output.address = (char *)malloc(output_size);
-	output.length = 0;
+  gtm_string_t output;
+  output.address = (char *)malloc(output_size);
+  output.length = 0;
   unsigned char result = openssl_crypt(6, &input, cipher, key, iv, 1, &output);
 
   if (result) {
     printf("error %d", result);
     return result;
   }
-  printf("%s\n", output.address);
+	BIO_dump_fp(stdout, (const char *)output.address, output.length);
 
-	gtm_string_t output2;
-	output2.address = (char *)malloc(output_size);
-	output2.length = 0;
-	
+  gtm_string_t output2;
+  output2.address = (char *)malloc(output_size);
+  output2.length = 0;
+  
   result = openssl_crypt(6, &output, cipher, key, iv, 0, &output2);
   if (result) {
     printf("error %d", result);
@@ -245,28 +271,33 @@ int main()
   }
   printf("%s\n", output2.address);
 
-	free(output.address);
-	free(output2.address);
+  free(output.address);
+  free(output2.address);
 
-	/* Try another example that currently fails */
-	input.length  = strlen("Alice and Bob had Sex!");
-	input.address = "Alice and Bob had Sex!";
+  /* Try another example that currently fails */
+  char *str = "Alice and Bob had Sex!";
+  input.length  = strlen(str) + 1;
+  input.address = str;
+  /* 
+  input.length  = strlen("aaa");
+  input.address = "aaa";
+  */
   char cipher2[] = "AES-256-CBC";
-  char key2[] = "0123456789abcdeF";
+  char key2[] = "0123456789abcdeF0123456789abcdeF";
   char iv2[] = "1234567887654321";
-	output.address = (char *)malloc(output_size);
-	output.length = 0;
+  output.address = (char *)malloc(output_size);
+  output.length = 0;
   result = openssl_crypt(6, &input, cipher2, key2, iv2, 1, &output);
 
   if (result) {
     printf("error %d", result);
     return result;
   }
-  printf("%s\n", output.address);
+	BIO_dump_fp(stdout, (const char *)output.address, output.length);
 
-	output2.address = (char *)malloc(output_size);
-	output2.length = 0;
-	
+  output2.address = (char *)malloc(output_size);
+  output2.length = 0;
+  
   result = openssl_crypt(6, &output, cipher2, key2, iv2, 0, &output2);
   if (result) {
     printf("error %d", result);
@@ -274,6 +305,6 @@ int main()
   }
   printf("%s\n", output2.address);
 
-	free(output.address);
-	free(output2.address);
+  free(output.address);
+  free(output2.address);
 }
