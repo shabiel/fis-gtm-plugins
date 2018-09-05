@@ -15,14 +15,6 @@
 /* To compile: */
 /* cc -I $gtm_dist -ansi -O2 -Wall -fPIC -shared openssl_ydb_wrapper.c -o openssl_ydb_wrapper.so -lcrypto */
 
-/* Error codes:
- * -1: Wrong number of arguments
- * -4: Digest type is not specified
- * -5: Digest type is not found
- * -6: openssl error
- * -7: strncpy error */
-
-
 /* call with do &openssl.md(input,"sha1",.zzz)
  *      or   set status=$&openssl.md(input,"sha1,",.zzz)
  *
@@ -219,6 +211,7 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
 	
 	/* Set current length */
 	output->length = ciphertext_len;
+	/* fprintf(stderr,"cipher len %d\n", ciphertext_len); */
   
   /* Finish */
   if (!EVP_CipherFinal_ex(ctx, (unsigned char *)output->address + output->length, &ciphertext_len))
@@ -228,6 +221,7 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
     return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
   }
   
+	/* fprintf(stderr,"cipher len %d\n", ciphertext_len); */
 	/* increment length of output */
 	output->length += ciphertext_len;
 
