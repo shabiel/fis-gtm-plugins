@@ -76,6 +76,54 @@ gtm_status_t curl_cleanup(int argc)
   return (gtm_status_t)0;
 }
 
+gtm_status_t curl_do(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
+{
+  CURLcode res;
+
+  struct MemoryStruct chunk;
+
+  chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */
+  chunk.size = 0;    /* no data at this point */
+
+  /* specify URL to get */
+  curl_easy_setopt(curl_handle, CURLOPT_URL, (char *)URL);
+
+  /* send all data to this function  */
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+
+  /* we pass our 'chunk' struct to the callback function */
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
+
+  /* some servers don't like requests that are made without a user-agent
+     field, so we provide one */
+  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+
+  /* get it! */
+  res = curl_easy_perform(curl_handle);
+
+  /* check for errors */
+  if(res != CURLE_OK) {
+    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+    return (gtm_status_t)-1;
+  }
+  else {
+    
+    /*
+     * Now, our chunk.memory points to a memory block that is chunk.size
+     * bytes big and contains the remote file.
+     *
+     * Do something nice with it!
+     */
+
+    output->length = chunk.size;
+    memcpy(output->address, chunk.memory, chunk.size);
+  }
+
+  free(chunk.memory);
+
+  return (gtm_status_t)0;
+}
+
 gtm_status_t curl(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
 { 
   CURLcode res;
@@ -140,7 +188,9 @@ int main() /* debugger routine to make sure everything still works */
  
   output.address = (char *)malloc(output_size);
   output.length = 0;
-  gtm_status_t status = curl(3, &output, "GET", "https://www.example.com", &payload, &mime, timeout, &output_headers, &input_headers);
+  curl_init(0);
+  gtm_status_t status = curl_do(3, &output, "GET", "https://www.example.com", &payload, &mime, timeout, &output_headers, &input_headers);
+  curl_cleanup(0);
   printf("%s",output.address);
   printf("%d",status);
 }
