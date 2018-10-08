@@ -169,10 +169,10 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
 {
   /* We have to use gtm_string_t for input and output b/c encrypted data can contained embedded zeros */
 
-	int ciphertext_len; /* temp variable for incrementing into output */
+  int ciphertext_len; /* temp variable for incrementing into output */
 
   /* Sanity checks */
-	
+  
   if (argc != 6)    return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_WRONGARGS;
   if (!cipher_name) return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_CIPHER_NOT_SPECIFIED;
 
@@ -208,10 +208,10 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
     cleanup(ctx);
     return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
   }
-	
-	/* Set current length */
-	output->length = ciphertext_len;
-	/* fprintf(stderr,"cipher len %d\n", ciphertext_len); */
+  
+  /* Set current length */
+  output->length = ciphertext_len;
+  /* fprintf(stderr,"cipher len %d\n", ciphertext_len); */
   
   /* Finish */
   if (!EVP_CipherFinal_ex(ctx, (unsigned char *)output->address + output->length, &ciphertext_len))
@@ -221,11 +221,11 @@ gtm_status_t openssl_crypt(int argc, gtm_string_t *input, gtm_char_t *cipher_nam
     return (gtm_status_t)OPENSSL_YDB_WRAPPER_E_OPENSSL_ERROR;
   }
   
-	/* fprintf(stderr,"cipher len %d\n", ciphertext_len); */
-	/* increment length of output */
-	output->length += ciphertext_len;
+  /* fprintf(stderr,"cipher len %d\n", ciphertext_len); */
+  /* increment length of output */
+  output->length += ciphertext_len;
 
-	/* Clean and return */
+  /* Clean and return */
   cleanup(ctx);
   return (gtm_status_t)OPENSSL_YDB_WRAPPER_OK;
 }
@@ -252,7 +252,7 @@ int main()
     printf("error %d", result);
     return result;
   }
-	BIO_dump_fp(stdout, (const char *)output.address, output.length);
+  BIO_dump_fp(stdout, (const char *)output.address, output.length);
 
   gtm_string_t output2;
   output2.address = (char *)malloc(output_size);
@@ -287,7 +287,7 @@ int main()
     printf("error %d", result);
     return result;
   }
-	BIO_dump_fp(stdout, (const char *)output.address, output.length);
+  BIO_dump_fp(stdout, (const char *)output.address, output.length);
 
   output2.address = (char *)malloc(output_size);
   output2.length = 0;
