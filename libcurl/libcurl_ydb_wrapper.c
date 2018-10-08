@@ -53,20 +53,39 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
   return realsize;
 }
 
-gtm_status_t curl(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
+CURL *curl_handle;
+
+gtm_status_t curl_init(int argc)
 {
-  CURL *curl_handle;
+  curl_global_init(CURL_GLOBAL_ALL);
+
+  /* init the curl session */
+  curl_handle = curl_easy_init();
+  
+  return (gtm_status_t)0;
+}
+
+gtm_status_t curl_cleanup(int argc)
+{
+  /* cleanup curl stuff */
+  curl_easy_cleanup(curl_handle);
+
+  /* we're done with libcurl, so clean it up */
+  curl_global_cleanup();
+
+  return (gtm_status_t)0;
+}
+
+gtm_status_t curl(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
+{ 
   CURLcode res;
+  
+  curl_init(0);
 
   struct MemoryStruct chunk;
 
   chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */
   chunk.size = 0;    /* no data at this point */
-
-  curl_global_init(CURL_GLOBAL_ALL);
-
-  /* init the curl session */
-  curl_handle = curl_easy_init();
 
   /* specify URL to get */
   curl_easy_setopt(curl_handle, CURLOPT_URL, (char *)URL);
@@ -102,13 +121,9 @@ gtm_status_t curl(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t
     memcpy(output->address, chunk.memory, chunk.size);
   }
 
-  /* cleanup curl stuff */
-  curl_easy_cleanup(curl_handle);
-
   free(chunk.memory);
 
-  /* we're done with libcurl, so clean it up */
-  curl_global_cleanup();
+  curl_cleanup(0);
 
   return (gtm_status_t)0;
 }
