@@ -55,7 +55,7 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 
 CURL *curl_handle;
 
-gtm_status_t curl_init(int argc)
+gtm_status_t curl_init()
 {
   curl_global_init(CURL_GLOBAL_ALL);
 
@@ -65,7 +65,7 @@ gtm_status_t curl_init(int argc)
   return (gtm_status_t)0;
 }
 
-gtm_status_t curl_cleanup(int argc)
+gtm_status_t curl_cleanup()
 {
   /* cleanup curl stuff */
   curl_easy_cleanup(curl_handle);
@@ -126,9 +126,9 @@ gtm_status_t curl_do(int argc, gtm_string_t *output, gtm_char_t *method, gtm_cha
 
 gtm_status_t curl(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
 { 
-  curl_init(0);
+  curl_init();
   curl_do(argc, output, method, URL, payload, mime, timeout, output_headers, input_headers);
-  curl_cleanup(0);
+  curl_cleanup();
   return (gtm_status_t)0;
 }
 
@@ -144,9 +144,9 @@ int main() /* tester routine to make sure everything still works */
  
   output.address = (char *)malloc(output_size);
   output.length = 0;
-  curl_init(0);
+  curl_init();
   gtm_status_t status = curl_do(3, &output, "GET", "https://www.example.com", &payload, &mime, timeout, &output_headers, &input_headers);
-  curl_cleanup(0);
+  curl_cleanup();
   printf("%s",output.address);
   printf("%d",status);
 }
