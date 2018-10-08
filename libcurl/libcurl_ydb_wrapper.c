@@ -19,17 +19,13 @@
  * KIND, either express or implied.
  *
  ***************************************************************************/
-/* <DESC>
- * Shows how the write callback function can be used to download data into a
- * chunk of memory instead of storing it in a file.
- * </DESC>
- */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <curl/curl.h>
+#include "gtmxc_types.h"
 
 struct MemoryStruct {
   char *memory;
@@ -57,7 +53,7 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
   return realsize;
 }
 
-int main(void)
+gtm_status_t curl(int argc, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
 {
   CURL *curl_handle;
   CURLcode res;
@@ -73,7 +69,7 @@ int main(void)
   curl_handle = curl_easy_init();
 
   /* specify URL to get */
-  curl_easy_setopt(curl_handle, CURLOPT_URL, "https://www.example.com/");
+  curl_easy_setopt(curl_handle, CURLOPT_URL, (char *)URL);
 
   /* send all data to this function  */
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -90,10 +86,11 @@ int main(void)
 
   /* check for errors */
   if(res != CURLE_OK) {
-    fprintf(stderr, "curl_easy_perform() failed: %s\n",
-            curl_easy_strerror(res));
+    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+    return (gtm_status_t)-1;
   }
   else {
+    
     /*
      * Now, our chunk.memory points to a memory block that is chunk.size
      * bytes big and contains the remote file.
@@ -101,7 +98,8 @@ int main(void)
      * Do something nice with it!
      */
 
-    printf("%lu bytes retrieved\n", (unsigned long)chunk.size);
+    output->length = chunk.size;
+    memcpy(output->address, chunk.memory, chunk.size);
   }
 
   /* cleanup curl stuff */
@@ -112,5 +110,22 @@ int main(void)
   /* we're done with libcurl, so clean it up */
   curl_global_cleanup();
 
-  return 0;
+  return (gtm_status_t)0;
+}
+
+int main() /* debugger routine to make sure everything still works */
+{
+  size_t output_size = 32768;
+  gtm_string_t output;
+  gtm_string_t payload;
+  gtm_char_t mime;
+  gtm_long_t timeout = 0;
+  gtm_string_t output_headers;
+  gtm_string_t input_headers;
+ 
+  output.address = (char *)malloc(output_size);
+  output.length = 0;
+  gtm_status_t status = curl(3, &output, "GET", "https://www.example.com", &payload, &mime, timeout, &output_headers, &input_headers);
+  printf("%s",output.address);
+  printf("%d",status);
 }
