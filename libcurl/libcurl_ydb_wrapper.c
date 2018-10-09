@@ -54,6 +54,24 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
   return realsize;
 }
 
+static size_t header_callback(char *buffer, size_t size,
+                              size_t nitems, void *return_headers)
+{
+  size_t realsize = size * nitems;
+  struct MemoryStruct *mem = (struct MemoryStruct *)return_headers;
+  char *ptr = realloc(mem->memory, mem->size + realsize + 1);
+  if(ptr == NULL) {
+    /* out of memory! */
+    printf("not enough memory (realloc returned NULL)\n");
+    return 0;
+  }
+  mem->memory = ptr;
+  memcpy(&(mem->memory[mem->size]), buffer, realsize);
+  mem->size += realsize;
+
+  return nitems * size;
+}
+
 CURL *curl_handle;
 struct curl_slist *hs;
 
@@ -80,15 +98,21 @@ gtm_status_t curl_cleanup()
 
 gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
 {
+  /* CURL result code */
   CURLcode res;
 
   /* Must have at least 4 arguments */
   if(argc < 4) return (gtm_status_t)-1;
 
+  /* curl's body return */
   struct MemoryStruct chunk;
-
   chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */
   chunk.size = 0;    /* no data at this point */
+
+  /* curl's header return */
+  struct MemoryStruct return_headers;
+  return_headers.memory = malloc(1);  /* will be grown as needed by the realloc above */
+  return_headers.size = 0;    /* no data at this point */
 
   /* Always disable signals */
   curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1L);
@@ -132,30 +156,46 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   }
 
   /* Timeout */
-  /*
-  if (timeout)
+  if (argc >= 7 && timeout)
   {
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, timeout);
   }
-  */
+
+  /* Output headers */
+  if (argc >= 8)
+  {
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, &return_headers);
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_callback);
+  }
 
   /* get it! */
   res = curl_easy_perform(curl_handle);
 
-  /* check for errors */
+  /* handle output */
   if(res == CURLE_OK) {
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, http_status);
     output->length = chunk.size;
     memcpy(output->address, chunk.memory, chunk.size);
+    if (return_headers.size) {
+      output_headers->length  = return_headers.size;
+      memcpy(output_headers->address, return_headers.memory, return_headers.size);
+    }
   }
   else {
     fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-    return (gtm_status_t)-1;
+    return (gtm_status_t)res;
   }
 
-  if (hs) curl_slist_free_all(hs);
+  /* setting freed mem to NULL isn't necessary, but it will help me avoid freeing already freed memory */
+  if (hs) {
+    curl_slist_free_all(hs);
+    hs = NULL;
+  }
   
   free(chunk.memory);
+  chunk.memory = NULL;
+  free(return_headers.memory);
+  return_headers.memory = NULL;
 
   return (gtm_status_t)0;
 }

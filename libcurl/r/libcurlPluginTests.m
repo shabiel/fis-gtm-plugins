@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 09, 2018@14:08
+opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 09, 2018@16:08
  ; (c) Sam Habiel 2018
  ; Licensed under Apache 2.0
  ;
@@ -7,18 +7,21 @@ TEST I $T(^%ut)="" QUIT
  QUIT
  ;
 T1 ; @TEST curl GET https://example.com
+ n sss,zzz
  d &libcurl.curl(.sss,.zzz,"GET","https://example.com")
  d CHKEQ^%ut(sss,200)
  d CHKTF^%ut(zzz["Example Domain")
  quit
  ;
 T2 ; @TEST curl GET https://rxnav.nlm.nih.gov/REST/rxcui/351772/allndcs.json
+ n sss,zzz
  d &libcurl.curl(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/rxcui/351772/allndcs.json")
  d CHKEQ^%ut(sss,200)
  d CHKTF^%ut(zzz["ndcConcept")
  quit
  ;
 T3 ; @TEST curl GET https://rxnav.nlm.nih.gov/REST/rxcui/174742/related.json?rela=tradename_of+has_precise_ingredient
+ n sss,zzz
  d &libcurl.curl(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/rxcui/174742/related.json?rela=tradename_of+has_precise_ingredient")
  d CHKEQ^%ut(sss,200)
  d CHKTF^%ut(zzz["relatedGroup")
@@ -30,6 +33,7 @@ T4 ; @TEST curlInit, curlCleanup runs w/o errors
  quit
  ;
 T5 ; @TEST curlDo GET https://example.com
+ n sss,zzz
  d &libcurl.curlInit
  d &libcurl.curlDo(.sss,.zzz,"GET","https://example.com")
  d CHKEQ^%ut(sss,200)
@@ -41,21 +45,27 @@ TMI ; @TEST Multiple GETs from Single Domain - Init
  d &libcurl.curlInit
  quit
 TM1 ; @TEST Multiple GETs from Single Domain - First
+ n sss,zzz
  d &libcurl.curlDo(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/ndcstatus.json?ndc=00143314501")
  quit
 TM2 ; @TEST Multiple GETs from Single Domain - Second
+ n sss,zzz
  d &libcurl.curlDo(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/drugs?name=cymbalta")
  quit
 TM3 ; @TEST Multiple GETs from Single Domain - Third
+ n sss,zzz
  d &libcurl.curlDo(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/termtypes")
  quit
 TM4 ; @TEST Multiple GETs from Single Domain - Fourth
+ n sss,zzz
  d &libcurl.curlDo(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/brands?ingredientids=8896+20610")
  quit
 TM5 ; @TEST Multiple GETs from Single Domain - Fifth
+ n sss,zzz
  d &libcurl.curlDo(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/brands?ingredientids=8896+20610")
  quit
 TM6 ; @TEST Mulitple GETs from Single Domain - Sixth
+ n sss,zzz
  d &libcurl.curlDo(.sss,.zzz,"GET","https://rxnav.nlm.nih.gov/REST/approximateTerm?term=zocor%2010%20mg&maxEntries=4")
  quit
 TMC ; @TEST Multiple GETs from Single Domain - Cleanup
@@ -63,6 +73,7 @@ TMC ; @TEST Multiple GETs from Single Domain - Cleanup
  quit
  ;
 TPAY ; @TEST Test Payload
+ n sss,zzz
  N PAYLOAD,RTN,H,RET
  N CRLF S CRLF=$C(13,10)
  N R S R=$R(123423421234)
@@ -74,6 +85,7 @@ TPAY ; @TEST Test Payload
  D CHKTF^%ut(zzz[R)
  QUIT
 TPAYMIME ; @TEST Test Payload with mime type
+ n sss,zzz
  N PAYLOAD,RTN,H,RET
  N CRLF S CRLF=$C(13,10)
  N R S R=$R(123423421234)
@@ -81,5 +93,24 @@ TPAYMIME ; @TEST Test Payload with mime type
  d &libcurl.curl(.sss,.zzz,"POST","https://httpbin.org/post",PAYLOAD,"application/json")
  d CHKEQ^%ut(sss,200)
  D CHKTF^%ut(zzz[R)
- w zzz
  QUIT
+ ;
+TTO ; @TEST curlDo GET https://example.com with timeout
+ n sss,zzz
+ d &libcurl.curlInit
+ d &libcurl.curlDo(.sss,.zzz,"GET","https://example.com",,,5)
+ d CHKEQ^%ut(sss,200)
+ d CHKTF^%ut(zzz["Example Domain")
+ d &libcurl.curlCleanup
+ quit
+ ;
+TH ; @TEST curlDo GET https://example.com with headers
+ n sss,zzz,headers
+ n crlf s crlf=$C(13,10)
+ d &libcurl.curlInit
+ d &libcurl.curlDo(.sss,.zzz,"GET","https://example.com",,,5,.headers)
+ d CHKEQ^%ut(sss,200)
+ d CHKTF^%ut(zzz["Example Domain")
+ d CHKTF^%ut(headers["Etag:")
+ d &libcurl.curlCleanup
+ quit

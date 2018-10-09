@@ -29,7 +29,7 @@ install: all
 	echo 'Put this in your env file: '
 	echo 'export GTMXC_libcurl="$(PLUGINDIR)/libcurl_ydb_wrapper.xc"'
 
-test: all compile
+test: debug compile
 	-@(gtmroutines=r GTMXC_libcurl=$(PWD)/libcurl_ydb_wrapper.xc $(DISTDIR)/mumps -run libcurlPluginTests)
 	-@(echo '')
 
