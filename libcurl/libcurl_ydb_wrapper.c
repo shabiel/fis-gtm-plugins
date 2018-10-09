@@ -85,6 +85,12 @@ gtm_status_t curl_init()
   return (gtm_status_t)0;
 }
 
+gtm_status_t curl_add_header(int argc, gtm_char_t *header)
+{
+  hs = curl_slist_append(hs, (char* )header);
+  return (gtm_status_t)0;
+}
+
 gtm_status_t curl_cleanup()
 {
   /* cleanup curl stuff */
@@ -152,8 +158,9 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
     strcpy(header, content_type);
     strncat(header, (char *)mime, 100 - content_type_len - 1); /* -1 for null term */
     hs = curl_slist_append(hs, header);
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, hs);
   }
+  
+  if (hs) curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, hs);
 
   /* Timeout */
   if (argc >= 7 && timeout)
@@ -174,19 +181,31 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   /* handle output */
   if(res == CURLE_OK) {
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, http_status);
-    output->length = chunk.size;
-    memcpy(output->address, chunk.memory, chunk.size);
-    if (return_headers.size) {
-      output_headers->length  = return_headers.size;
-      memcpy(output_headers->address, return_headers.memory, return_headers.size);
+    if (output->length < chunk.size)
+    {
+      fprintf(stderr, "Web Service return greater than GTM/YDB Max String Size %ld", output->length);
+      res = -1;
+    }
+    else if (return_headers.size && output_headers->length < return_headers.size) {
+      fprintf(stderr, "Headers longer that max header size %ld", output_headers->length);
+      res = -1;
+    }
+    else
+    {
+      output->length = chunk.size;
+      memcpy(output->address, chunk.memory, chunk.size);
+      if (return_headers.size) {
+        output_headers->length  = return_headers.size;
+        memcpy(output_headers->address, return_headers.memory, return_headers.size);
+      }
     }
   }
   else {
     fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-    return (gtm_status_t)res;
   }
 
   /* setting freed mem to NULL isn't necessary, but it will help me avoid freeing already freed memory */
+  /* Plus we figure out if we have header by seeing if it is null no not */
   if (hs) {
     curl_slist_free_all(hs);
     hs = NULL;
@@ -197,7 +216,7 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   free(return_headers.memory);
   return_headers.memory = NULL;
 
-  return (gtm_status_t)0;
+  return (gtm_status_t)res;
 }
 
 gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)

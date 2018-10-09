@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 09, 2018@16:08
+opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 09, 2018@17:21
  ; (c) Sam Habiel 2018
  ; Licensed under Apache 2.0
  ;
@@ -104,7 +104,7 @@ TTO ; @TEST curlDo GET https://example.com with timeout
  d &libcurl.curlCleanup
  quit
  ;
-TH ; @TEST curlDo GET https://example.com with headers
+THGET ; @TEST curlDo GET https://example.com with headers
  n sss,zzz,headers
  n crlf s crlf=$C(13,10)
  d &libcurl.curlInit
@@ -113,4 +113,13 @@ TH ; @TEST curlDo GET https://example.com with headers
  d CHKTF^%ut(zzz["Example Domain")
  d CHKTF^%ut(headers["Etag:")
  d &libcurl.curlCleanup
+ quit
+ ;
+THSEND ; @TEST curlDo Send Custom Headers
+ n sss,zzz,headers
+ n crlf s crlf=$C(13,10)
+ d &libcurl.curlInit
+ d &libcurl.curlAddHeader("DNT: 1")
+ d &libcurl.curlDo(.sss,.zzz,"GET","https://httpbin.org/headers",,,5,.headers)
+ d CHKTF^%ut($ZCO(zzz,"U")["DNT")
  quit
