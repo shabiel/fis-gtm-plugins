@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 09, 2018@13:44
+opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 09, 2018@14:08
  ; (c) Sam Habiel 2018
  ; Licensed under Apache 2.0
  ;
@@ -72,4 +72,14 @@ TPAY ; @TEST Test Payload
  d &libcurl.curl(.sss,.zzz,"POST","https://httpbin.org/post",PAYLOAD)
  d CHKEQ^%ut(sss,200)
  D CHKTF^%ut(zzz[R)
+ QUIT
+TPAYMIME ; @TEST Test Payload with mime type
+ N PAYLOAD,RTN,H,RET
+ N CRLF S CRLF=$C(13,10)
+ N R S R=$R(123423421234)
+ S PAYLOAD="{""test"":"_R_"}"
+ d &libcurl.curl(.sss,.zzz,"POST","https://httpbin.org/post",PAYLOAD,"application/json")
+ d CHKEQ^%ut(sss,200)
+ D CHKTF^%ut(zzz[R)
+ w zzz
  QUIT

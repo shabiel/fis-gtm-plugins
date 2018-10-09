@@ -55,7 +55,7 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 }
 
 CURL *curl_handle;
-struct curl_slist *hs = NULL;
+struct curl_slist *hs;
 
 gtm_status_t curl_init()
 {
@@ -120,16 +120,16 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   }
   
   /* Mime type */
-  /*
-  if (strlen((char *)mime))
+  if (argc >= 6 && strlen((char *)mime))
   {
     char header[100];
-    strncpy(header, "Content-Type: ", strlen("Content-Type: "));
-    strncat(header, (char *)mime, strlen((char *)mime));
+    char* content_type="Content-Type: ";
+    int content_type_len=strlen(content_type);
+    strcpy(header, content_type);
+    strncat(header, (char *)mime, 100 - content_type_len - 1); /* -1 for null term */
     hs = curl_slist_append(hs, header);
     curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, hs);
   }
-  */
 
   /* Timeout */
   /*
@@ -153,9 +153,7 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
     return (gtm_status_t)-1;
   }
 
-  /*
   if (hs) curl_slist_free_all(hs);
-  */
   
   free(chunk.memory);
 
