@@ -102,6 +102,15 @@ gtm_status_t curl_cleanup()
   return (gtm_status_t)0;
 }
 
+gtm_status_t curl_auth(int argc, gtm_char_t *auth_type, gtm_char_t *unpw)
+{
+  /* Right now, there is nothing else besides basic supported; so I am
+   * not even checking the auth type parameter */
+  curl_easy_setopt(curl_handle, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+  curl_easy_setopt(curl_handle, CURLOPT_USERPWD, (char *)unpw);
+  return (gtm_status_t)0;
+}
+
 gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
 {
   /* CURL result code */
@@ -184,11 +193,11 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
     if (output->length < chunk.size)
     {
       fprintf(stderr, "Web Service return greater than GTM/YDB Max String Size %ld", output->length);
-      res = -1;
+      res = 255;
     }
     else if (return_headers.size && output_headers->length < return_headers.size) {
       fprintf(stderr, "Headers longer that max header size %ld", output_headers->length);
-      res = -1;
+      res = 255;
     }
     else
     {
@@ -205,7 +214,7 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   }
 
   /* setting freed mem to NULL isn't necessary, but it will help me avoid freeing already freed memory */
-  /* Plus we figure out if we have header by seeing if it is null no not */
+  /* Plus we figure out if we have header by seeing if it is null or not */
   if (hs) {
     curl_slist_free_all(hs);
     hs = NULL;
@@ -222,9 +231,9 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
 gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
 { 
   curl_init();
-  curl_do(argc, http_status, output, method, URL, payload, mime, timeout, output_headers, input_headers);
+  gtm_status_t res = curl_do(argc, http_status, output, method, URL, payload, mime, timeout, output_headers, input_headers);
   curl_cleanup();
-  return (gtm_status_t)0;
+  return res;
 }
 
 int main() /* tester routine to make sure everything still works */
