@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 10, 2018@13:36
+opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 11, 2018@14:50
  ; (c) Sam Habiel 2018
  ; Licensed under Apache 2.0
  ;
@@ -173,4 +173,58 @@ TBAUTH ; @TEST Basic authoriazation
  d &libcurl.cleanup
  d CHKEQ^%ut(sss,200)
  d CHKTF^%ut(zzz["boo")
+ quit
+ ;
+TCERT1 ; @TEST Test TLS with a client certificate no key password
+ W !!
+ N %CMD
+ S %CMD="openssl req -x509 -nodes -days 365 -sha256 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -newkey rsa:2048 -keyout /tmp/mycert.key -out /tmp/mycert.pem"
+ ZSY %CMD
+ S %CMD="openssl req -new -nodes -newkey rsa:2048 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -keyout /tmp/client.key -out /tmp/client.csr"
+ ZSY %CMD
+ S %CMD="openssl x509 -req -in /tmp/client.csr -CA /tmp/mycert.pem -CAkey /tmp/mycert.key -CAcreateserial -out /tmp/client.pem -days 1024 -sha256"
+ ZSY %CMD
+ ;
+ n sss,zzz,ec
+ d &libcurl.init
+ n status s status=$&libcurl.do(.sss,.zzz,"GET","https://prod.idrix.eu/secure/")
+ d CHKTF^%ut(zzz["No SSL client certificate presented")
+ d &libcurl.cleanup
+ d &libcurl.init
+ d &libcurl.clientTLS("/tmp/client.pem","/tmp/client.key")
+ n status s status=$&libcurl.do(.sss,.zzz,"GET","https://prod.idrix.eu/secure/")
+ d CHKTF^%ut(zzz["SSL Authentication OK!")
+ d &libcurl.cleanup
+ zsy "rm /tmp/mycert* /tmp/client*"
+ quit
+ ;
+TCERT2 ; @TEST Test TLS with a client certifiate with key password
+ N %CMD
+ S %CMD="openssl req -x509 -nodes -days 365 -sha256 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -newkey rsa:2048 -keyout /tmp/mycert.key -out /tmp/mycert.pem"
+ ZSY %CMD
+ ;
+ S %CMD="openssl req -new -newkey rsa:2048 -passout pass:monkey1234 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -keyout /tmp/client.key -out /tmp/client.csr"
+ ZSY %CMD
+ ;
+ S %CMD="openssl x509 -req -in /tmp/client.csr -CA /tmp/mycert.pem -CAkey /tmp/mycert.key -CAcreateserial -out /tmp/client.pem -days 1024 -sha256"
+ ZSY %CMD
+ ;
+ n status
+ n $es,$et s $et="q:$es>1  s $ec="""""
+ d
+ . d &libcurl.init
+ . d &libcurl.clientTLS("/tmp/client.pem","/tmp/client.key")
+ . s status=$&libcurl.do(.sss,.zzz,"GET","https://prod.idrix.eu/secure/")
+ . d &libcurl.cleanup
+ D CHKTF^%ut(status)
+ n sss,zzz,ec
+ d &libcurl.init
+ d &libcurl.clientTLS("/tmp/client.pem","/tmp/client.key","monkey1234")
+ s status=$&libcurl.do(.sss,.zzz,"GET","https://prod.idrix.eu/secure/")
+ d CHKEQ^%ut(status,0)
+ d CHKTF^%ut(zzz["SSL Authentication OK!")
+ d &libcurl.cleanup
+ ;
+ zsy "rm /tmp/mycert* /tmp/client*"
+ ;
  quit

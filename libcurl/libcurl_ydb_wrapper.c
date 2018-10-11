@@ -102,6 +102,32 @@ gtm_status_t curl_cleanup()
   return (gtm_status_t)0;
 }
 
+/* Client TLS */
+gtm_status_t curl_client_tls(int argc, 
+    gtm_char_t *certFile,              /* 1 */
+    gtm_char_t *privateKeyFile,        /* 2 */
+    gtm_char_t *privateKeyPassword,    /* 3 */
+    gtm_char_t *CABundleFile)          /* 4 */
+{
+  /* first two arguments required - Certificate and Key */
+  curl_easy_setopt(curl_handle, CURLOPT_SSLCERT, (char *)certFile);
+  curl_easy_setopt(curl_handle, CURLOPT_SSLKEY,  (char *)privateKeyFile);
+
+  /* Key password */
+  if (argc >= 3 && strlen(privateKeyPassword))
+  {
+     curl_easy_setopt(curl_handle, CURLOPT_KEYPASSWD, privateKeyPassword);
+  }
+
+  /* Apply CABundleFile if requested */
+  if (argc >= 4 && strlen(CABundleFile))
+  {
+    curl_easy_setopt(curl_handle, CURLOPT_CAINFO,  (char *)CABundleFile);
+  }
+  return (gtm_status_t)0;
+}
+ 
+/* Call to support HTTP AUTH */
 gtm_status_t curl_auth(int argc, gtm_char_t *auth_type, gtm_char_t *unpw)
 {
   /* Right now, there is nothing else besides basic supported; so I am
@@ -111,18 +137,32 @@ gtm_status_t curl_auth(int argc, gtm_char_t *auth_type, gtm_char_t *unpw)
   return (gtm_status_t)0;
 }
 
-gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
+/* Perform the curl operation */
+/* Return: 
+ *   0 - ok,
+ *   255 - output not compatible with plugin,
+ *   -1 input arguments error */
+gtm_status_t curl_do(int argc, 
+    gtm_long_t* http_status,      /* 1 */
+    gtm_string_t *output,         /* 2 */
+    gtm_char_t *method,           /* 3 */
+    gtm_char_t *URL,              /* 4 */
+    gtm_string_t *payload,        /* 5 */
+    gtm_char_t *mime,             /* 6 */
+    gtm_long_t timeout,           /* 7 */
+    gtm_string_t *output_headers, /* 8 */
+    gtm_string_t *input_headers)  /* 9 */
 {
   /* CURL result code */
-  CURLcode res;
+  CURLcode curl_result;
 
   /* Must have at least 4 arguments */
   if(argc < 4) return (gtm_status_t)-1;
 
   /* curl's body return */
-  struct MemoryStruct chunk;
-  chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */
-  chunk.size = 0;    /* no data at this point */
+  struct MemoryStruct return_body;
+  return_body.memory = malloc(1);  /* will be grown as needed by the realloc above */
+  return_body.size = 0;    /* no data at this point */
 
   /* curl's header return */
   struct MemoryStruct return_headers;
@@ -138,12 +178,12 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   /* send all data to this function  */
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 
-  /* we pass our 'chunk' struct to the callback function */
-  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
+  /* we pass our 'return_body' struct to the callback function */
+  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&return_body);
 
   /* some servers don't like requests that are made without a user-agent
      field, so we provide one */
-  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "ydb/libcurl/1.0");
   
   /* Method (GET, PUT, etc.) */
   if (strlen((char *)method))
@@ -168,7 +208,6 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
     strncat(header, (char *)mime, 100 - content_type_len - 1); /* -1 for null term */
     hs = curl_slist_append(hs, header);
   }
-  
   if (hs) curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, hs);
 
   /* Timeout */
@@ -185,24 +224,24 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
   }
 
   /* get it! */
-  res = curl_easy_perform(curl_handle);
+  curl_result = curl_easy_perform(curl_handle);
 
   /* handle output */
-  if(res == CURLE_OK) {
+  if(curl_result == CURLE_OK) {
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, http_status);
-    if (output->length < chunk.size)
+    if (output->length < return_body.size)
     {
       fprintf(stderr, "Web Service return greater than GTM/YDB Max String Size %ld", output->length);
-      res = 255;
+      curl_result = 255;
     }
     else if (return_headers.size && output_headers->length < return_headers.size) {
       fprintf(stderr, "Headers longer that max header size %ld", output_headers->length);
-      res = 255;
+      curl_result = 255;
     }
     else
     {
-      output->length = chunk.size;
-      memcpy(output->address, chunk.memory, chunk.size);
+      output->length = return_body.size;
+      memcpy(output->address, return_body.memory, return_body.size);
       if (return_headers.size) {
         output_headers->length  = return_headers.size;
         memcpy(output_headers->address, return_headers.memory, return_headers.size);
@@ -210,30 +249,37 @@ gtm_status_t curl_do(int argc, gtm_long_t* http_status, gtm_string_t *output, gt
     }
   }
   else {
-    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(curl_result));
   }
 
-  /* setting freed mem to NULL isn't necessary, but it will help me avoid freeing already freed memory */
+  /* setting freed mem to NULL isn't necessary, but it will help me avoid
+   * freeing already freed memory */
   /* Plus we figure out if we have header by seeing if it is null or not */
   if (hs) {
     curl_slist_free_all(hs);
     hs = NULL;
   }
   
-  free(chunk.memory);
-  chunk.memory = NULL;
+  /* Free return and headers buffers */
+  free(return_body.memory);
+  return_body.memory = NULL;
   free(return_headers.memory);
   return_headers.memory = NULL;
 
-  return (gtm_status_t)res;
+  return (gtm_status_t)curl_result;
 }
 
-gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output, gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, gtm_string_t *input_headers)
+/* Easy wrapper that does everything all in one step */
+gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output, 
+    gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, 
+    gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, 
+    gtm_string_t *input_headers)
 { 
   curl_init();
-  gtm_status_t res = curl_do(argc, http_status, output, method, URL, payload, mime, timeout, output_headers, input_headers);
+  gtm_status_t curl_result = curl_do(argc, http_status, output, method, URL, payload, 
+      mime, timeout, output_headers, input_headers);
   curl_cleanup();
-  return res;
+  return curl_result;
 }
 
 int main() /* tester routine to make sure everything still works */
@@ -250,7 +296,9 @@ int main() /* tester routine to make sure everything still works */
   output.address = (char *)malloc(output_size);
   output.length = 0;
   curl_init();
-  gtm_status_t status = curl_do(3, &http_status, &output, "GET", "https://www.example.com", &payload, &mime, timeout, &output_headers, &input_headers);
+  gtm_status_t status = curl_do(3, &http_status, &output, "GET",
+      "https://www.example.com", &payload, &mime, timeout, &output_headers,
+      &input_headers);
   curl_cleanup();
   printf("%s",output.address);
   printf("%d",status);
