@@ -94,10 +94,15 @@ gtm_status_t curl_add_header(int argc, gtm_char_t *header)
 gtm_status_t curl_cleanup()
 {
   /* cleanup curl stuff */
-  curl_easy_cleanup(curl_handle);
+  if (curl_handle != NULL)
+  {
+    curl_easy_cleanup(curl_handle);
 
-  /* we're done with libcurl, so clean it up */
-  curl_global_cleanup();
+    /* we're done with libcurl, so clean it up */
+    curl_global_cleanup();
+
+    curl_handle = NULL;
+  }
 
   return (gtm_status_t)0;
 }
