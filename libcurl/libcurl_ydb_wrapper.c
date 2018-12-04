@@ -167,8 +167,7 @@ gtm_status_t curl_do(int argc,
     gtm_string_t *payload,        /* 5 */
     gtm_char_t *mime,             /* 6 */
     gtm_long_t timeout,           /* 7 */
-    gtm_string_t *output_headers, /* 8 */
-    gtm_string_t *input_headers)  /* 9 */
+    gtm_string_t *output_headers) /* 8 */
 {
   /* CURL result code */
   CURLcode curl_result;
@@ -289,12 +288,11 @@ gtm_status_t curl_do(int argc,
 /* Easy wrapper that does everything all in one step */
 gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output, 
     gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, 
-    gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers, 
-    gtm_string_t *input_headers)
+    gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers)
 { 
   curl_init();
   gtm_status_t curl_result = curl_do(argc, http_status, output, method, URL, payload, 
-      mime, timeout, output_headers, input_headers);
+      mime, timeout, output_headers);
   curl_cleanup();
   return curl_result;
 }
@@ -308,14 +306,12 @@ int main() /* tester routine to make sure everything still works */
   gtm_long_t timeout = 0;
   gtm_long_t http_status = 0;
   gtm_string_t output_headers;
-  gtm_string_t input_headers;
  
   output.address = (char *)malloc(output_size);
   output.length = 0;
   curl_init();
   gtm_status_t status = curl_do(3, &http_status, &output, "GET",
-      "https://www.example.com", &payload, &mime, timeout, &output_headers,
-      &input_headers);
+      "https://www.example.com", &payload, &mime, timeout, &output_headers);
   curl_cleanup();
   printf("%s",output.address);
   printf("%d",status);
