@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - Libcurl Tests;Oct 11, 2018@14:50
+opensslPluginTests ; OSE/SMH - Libcurl Tests;2018-12-04  11:17 AM
  ; (c) Sam Habiel 2018
  ; Licensed under Apache 2.0
  ;
@@ -199,6 +199,7 @@ TCERT1 ; @TEST Test TLS with a client certificate no key password
  quit
  ;
 TCERT2 ; @TEST Test TLS with a client certifiate with key password
+ I $ZV["Darwin" QUIT  ; Darwin always asks for password; so I give up.
  N %CMD
  S %CMD="openssl req -x509 -nodes -days 365 -sha256 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -newkey rsa:2048 -keyout /tmp/mycert.key -out /tmp/mycert.pem"
  ZSY %CMD
