@@ -1,4 +1,4 @@
-opensslPluginTests ; OSE/SMH - Libcurl Tests;2018-12-04  11:17 AM
+opensslPluginTests ; OSE/SMH - Libcurl Tests;2018-12-04  11:30 AM
  ; (c) Sam Habiel 2018
  ; Licensed under Apache 2.0
  ;
@@ -207,7 +207,7 @@ TCERT2 ; @TEST Test TLS with a client certifiate with key password
  S %CMD="openssl req -new -newkey rsa:2048 -passout pass:monkey1234 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -keyout /tmp/client.key -out /tmp/client.csr"
  ZSY %CMD
  ;
- S %CMD="openssl x509 -req -in /tmp/client.csr -CA /tmp/mycert.pem -CAkey /tmp/mycert.key -CAcreateserial -out /tmp/client.pem -days 1024 -sha256"
+ S %CMD="openssl x509 -req -in /tmp/client.csr -CA /tmp/mycert.pem -passin pass:monkey1234 -CAkey /tmp/mycert.key -CAcreateserial -out /tmp/client.pem -days 1024 -sha256"
  ZSY %CMD
  ;
  n status
