@@ -23,7 +23,7 @@ debug:	all
 
 install: all
 	cp libcurl_ydb_wrapper.so $(PLUGINDIR)
-	echo '$$gtm_dist/plugin/libcurl_ydb_wrapper.so' > $(PLUGINDIR)/curl_ydb_wrapper.xc
+	echo '$$gtm_dist/plugin/libcurl_ydb_wrapper.so' > $(PLUGINDIR)/libcurl_ydb_wrapper.xc
 	cat libcurl_ydb_wrapper.xc_proto >> $(PLUGINDIR)/libcurl_ydb_wrapper.xc
 	chmod a-w $(PLUGINDIR)/libcurl_ydb_wrapper.so $(PLUGINDIR)/libcurl_ydb_wrapper.xc
 	echo 'Put this in your env file: '
