@@ -129,6 +129,7 @@ gtm_status_t curl_client_tls(int argc,
   /* first two arguments required - Certificate and Key */
   curl_easy_setopt(curl_handle, CURLOPT_SSLCERT, (char *)certFile);
   curl_easy_setopt(curl_handle, CURLOPT_SSLKEY,  (char *)privateKeyFile);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1);
 
   /* Key password */
   if (argc >= 3 && strlen(privateKeyPassword))
@@ -141,6 +142,15 @@ gtm_status_t curl_client_tls(int argc,
   {
     curl_easy_setopt(curl_handle, CURLOPT_CAINFO,  (char *)CABundleFile);
   }
+
+  return (gtm_status_t)0;
+}
+
+/* Server self-signed certificate support */
+gtm_status_t curl_server_ca(int argc, gtm_char_t *CABundleFile)
+{
+  curl_easy_setopt(curl_handle, CURLOPT_CAINFO, (char *)CABundleFile);
+  curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1);
   return (gtm_status_t)0;
 }
  
