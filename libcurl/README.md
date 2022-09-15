@@ -197,6 +197,15 @@ You can add a CABundleFile as the 4th paramter. I haven't personally tested
 that; so I don't know how will it work; but I thought it may be useful in
 enterprise scenarios, where the certificates may all be self-generated.
 
+To trust a specific certificate, using `.serverCA`, e.g.:
+
+```
+ d &libcurl.init
+ d &libcurl.serverCA("/tmp/client.pem")
+ d &libcurl.do(.httpStatus,.return,"GET","https://localhost:55730/ping")
+ d &libcurl.cleanup
+```
+
 ## Error Codes
 There are seen only if you call libcurl as an extrinsic function, and trap the
 M error that is caused when it returns with a non-zero code.
