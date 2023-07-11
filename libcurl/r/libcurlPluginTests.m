@@ -1,5 +1,5 @@
 opensslPluginTests ; OSE/SMH - Libcurl Tests;2018-12-04  11:30 AM
- ; (c) Sam Habiel 2018
+ ; (c) Sam Habiel 2018,2023
  ; Licensed under Apache 2.0
  ;
 TEST I $T(^%ut)="" QUIT
@@ -125,7 +125,7 @@ THGET ; @TEST do GET https://example.com with headers
  d CHKEQ^%ut(status,0)
  d CHKEQ^%ut(sss,200)
  d CHKTF^%ut(zzz["Example Domain")
- d CHKTF^%ut(headers["Etag:")
+ d CHKTF^%ut(headers["etag:")
  d &libcurl.cleanup
  quit
  ;
@@ -134,7 +134,7 @@ THSEND ; @TEST do Send Custom Headers
  n crlf s crlf=$C(13,10)
  d &libcurl.init
  d &libcurl.addHeader("DNT: 1")
- n status s status=$&libcurl.do(.sss,.zzz,"GET","https://httpbin.org/headers",,,5,.headers)
+ n status s status=$&libcurl.do(.sss,.zzz,"GET","https://httpbin.org/headers",,,,.headers)
  d CHKEQ^%ut(status,0)
  d &libcurl.cleanup
  d CHKTF^%ut($ZCO(zzz,"U")["DNT")

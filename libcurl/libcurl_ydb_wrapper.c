@@ -18,7 +18,7 @@
  * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
  * KIND, either express or implied.
  *
- * Copyright (C) 2018 Sam Habiel - Modifications to work on GT.M/YDB
+ * Copyright (C) 2018,2023 Sam Habiel - Modifications to work on GT.M/YDB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,6 +291,9 @@ gtm_status_t curl_do(int argc,
   return_body.memory = NULL;
   free(return_headers.memory);
   return_headers.memory = NULL;
+
+  /* Re-initialize (for second or later call) */
+  curl_easy_reset(curl_handle);
 
   return (gtm_status_t)curl_result;
 }
