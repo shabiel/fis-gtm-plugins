@@ -95,6 +95,16 @@ TPAY ; @TEST Test Payload
  d CHKEQ^%ut(sss,200)
  D CHKTF^%ut(zzz[R)
  QUIT
+ ;
+TPAY0 ; @TEST Test empty payload
+ n sss,zzz
+ N PAYLOAD,RTN,H,RET
+ N CRLF S CRLF=$C(13,10)
+ n status s status=$&libcurl.curl(.sss,.zzz,"POST","https://httpbin.org/post","")
+ d CHKEQ^%ut(status,0)
+ d CHKEQ^%ut(sss,200)
+ QUIT
+ ;
 TPAYMIME ; @TEST Test Payload with mime type
  n sss,zzz
  N PAYLOAD,RTN,H,RET
@@ -201,13 +211,13 @@ TCERT1 ; @TEST Test TLS with a client certificate no key password
 TCERT2 ; @TEST Test TLS with a client certifiate with key password
  I $ZV["Darwin" QUIT  ; Darwin always asks for password; so I give up.
  N %CMD
- S %CMD="openssl req -x509 -nodes -days 365 -sha256 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -newkey rsa:2048 -keyout /tmp/mycert.key -out /tmp/mycert.pem"
+ S %CMD="openssl genrsa -aes128 -passout pass:monkey1234 -out /tmp/mycert.key 2048"
  ZSY %CMD
  ;
- S %CMD="openssl req -new -newkey rsa:2048 -passout pass:monkey1234 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -keyout /tmp/client.key -out /tmp/client.csr"
+ S %CMD="openssl req -new -key /tmp/mycert.key -passin pass:monkey1234 -subj '/C=US/ST=Washington/L=Seattle/CN=www.smh101.com' -out /tmp/mycert.csr"
  ZSY %CMD
  ;
- S %CMD="openssl x509 -req -in /tmp/client.csr -CA /tmp/mycert.pem -passin pass:monkey1234 -CAkey /tmp/mycert.key -CAcreateserial -out /tmp/client.pem -days 1024 -sha256"
+ S %CMD="openssl req -x509 -days 365 -sha256 -in /tmp/mycert.csr -key /tmp/mycert.key -passin pass:monkey1234 -out /tmp/mycert.pem"
  ZSY %CMD
  ;
  n status
