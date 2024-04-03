@@ -218,10 +218,13 @@ gtm_status_t curl_do(int argc,
   }
 
   /* Payload for PUT or POST */
-  if (argc >= 5 && (NULL != payload->address))
-  {
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, payload->length);
-    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS,    payload->address);
+  if (argc >= 5) {
+    if (payload->length == 0) {
+      curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS,    "");
+    } else {
+      curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, payload->length);
+      curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS,    payload->address);
+    }
   }
   
   /* Mime type */
