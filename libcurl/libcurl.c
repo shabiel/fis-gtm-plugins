@@ -93,7 +93,7 @@ gtm_status_t curl_init()
 
   /* init the curl session */
   curl_handle = curl_easy_init();
-  
+
   return (gtm_status_t)0;
 }
 
@@ -120,7 +120,7 @@ gtm_status_t curl_cleanup()
 }
 
 /* Client TLS */
-gtm_status_t curl_client_tls(int argc, 
+gtm_status_t curl_client_tls(int argc,
     gtm_char_t *certFile,              /* 1 */
     gtm_char_t *privateKeyFile,        /* 2 */
     gtm_char_t *privateKeyPassword,    /* 3 */
@@ -153,7 +153,7 @@ gtm_status_t curl_server_ca(int argc, gtm_char_t *CABundleFile)
   curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 1);
   return (gtm_status_t)0;
 }
- 
+
 /* Call to support HTTP AUTH */
 gtm_status_t curl_auth(int argc, gtm_char_t *auth_type, gtm_char_t *unpw)
 {
@@ -165,11 +165,11 @@ gtm_status_t curl_auth(int argc, gtm_char_t *auth_type, gtm_char_t *unpw)
 }
 
 /* Perform the curl operation */
-/* Return: 
+/* Return:
  *   0 - ok,
  *   255 - output not compatible with plugin,
  *   -1 input arguments error */
-gtm_status_t curl_do(int argc, 
+gtm_status_t curl_do(int argc,
     gtm_long_t* http_status,      /* 1 */
     gtm_string_t *output,         /* 2 */
     gtm_char_t *method,           /* 3 */
@@ -210,7 +210,7 @@ gtm_status_t curl_do(int argc,
   /* some servers don't like requests that are made without a user-agent
      field, so we provide one */
   curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "ydb/libcurl/1.0");
-  
+
   /* Method (GET, PUT, etc.) */
   if (strlen((char *)method))
   {
@@ -226,7 +226,7 @@ gtm_status_t curl_do(int argc,
       curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS,    payload->address);
     }
   }
-  
+
   /* Mime type */
   if (argc >= 6 && strlen((char *)mime))
   {
@@ -242,7 +242,7 @@ gtm_status_t curl_do(int argc,
   /* Timeout */
   if (argc >= 7 && timeout)
   {
-    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, timeout);
+    curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT_MS, timeout);
   }
 
   /* Output headers */
@@ -288,7 +288,7 @@ gtm_status_t curl_do(int argc,
     curl_slist_free_all(hs);
     hs = NULL;
   }
-  
+
   /* Free return and headers buffers */
   free(return_body.memory);
   return_body.memory = NULL;
@@ -302,12 +302,12 @@ gtm_status_t curl_do(int argc,
 }
 
 /* Easy wrapper that does everything all in one step */
-gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output, 
-    gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload, 
+gtm_status_t curl(int argc, gtm_long_t* http_status, gtm_string_t *output,
+    gtm_char_t *method, gtm_char_t *URL, gtm_string_t *payload,
     gtm_char_t *mime, gtm_long_t timeout, gtm_string_t *output_headers)
-{ 
+{
   curl_init();
-  gtm_status_t curl_result = curl_do(argc, http_status, output, method, URL, payload, 
+  gtm_status_t curl_result = curl_do(argc, http_status, output, method, URL, payload,
       mime, timeout, output_headers);
   curl_cleanup();
   return curl_result;
@@ -322,7 +322,7 @@ int main() /* tester routine to make sure everything still works */
   gtm_long_t timeout = 0;
   gtm_long_t http_status = 0;
   gtm_string_t output_headers;
- 
+
   output.address = (char *)malloc(output_size);
   output.length = 0;
   curl_init();
