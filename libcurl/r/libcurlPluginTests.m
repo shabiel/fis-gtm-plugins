@@ -117,7 +117,7 @@ TPAYMIME ; @TEST Test Payload with mime type
  D CHKTF^%ut(zzz[R)
  QUIT
  ;
-TTO ; @TEST do GET https://example.com with timeout
+TTO ; @TEST do GET https://example.com with full timeout in seconds
  n sss,zzz
  d &libcurl.init
  n status s status=$&libcurl.do(.sss,.zzz,"GET","https://example.com",,,5)
@@ -125,6 +125,19 @@ TTO ; @TEST do GET https://example.com with timeout
  d CHKEQ^%ut(sss,200)
  d CHKTF^%ut(zzz["Example Domain")
  d &libcurl.cleanup
+ quit
+ ;
+TCTO ; @TEST do GET https://example.com with connect timeout in milliseconds
+ n sss,zzz,status
+ d &libcurl.init
+ do
+ . n $et s $et="set $ec="""""
+ . d &libcurl.conTimeoutMS(1)
+ . s status=$&libcurl.do(.sss,.zzz,"GET","https://example.com")
+ d &libcurl.cleanup
+ d CHKEQ^%ut($data(status),0)
+ d CHKEQ^%ut(sss,-28)
+ d CHKEQ^%ut(zzz,"Timeout was reached")
  quit
  ;
 THGET ; @TEST do GET https://example.com with headers

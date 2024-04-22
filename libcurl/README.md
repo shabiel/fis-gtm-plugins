@@ -10,7 +10,7 @@ The following features in libcurl have been implemented:
  * TLS supported - normal; with client certificates (w or w/o passwords); and with addition CA bundles. All TLS versions that curl supports are supported.
  * HTTP Basic Auth support; none others right now.
  * Can send in different mime types
- * Can adjust timeout
+ * Can adjust full timeout (seconds) and connect timeout (milliseconds)
  * Can get back output headers
  * Ability to reuse the same connection(s) for multiple HTTP requests
 
@@ -62,6 +62,7 @@ libcurl.cleanup()
 libcurl.addHeader("header: text")
 libcurl.auth("Basic","username:password")
 libcurl.clientTLS("path to cert","path to key","key password","path to CA Bundle")
+libcurl.conTimeoutMS(milliseconds)
 ```
 
 ## Usage
@@ -132,11 +133,24 @@ If you need to supply a mime type (as curl defaults to `application/x-www-form-u
 ```
 
 ### Timeout
-Timeout can be passed as the 7th parameter.
+Full Timeout can be passed as the 7th parameter.
 
 ```
  n status s status=$&libcurl.curl(.sss,.zzz,"GET","https://example.com",,,5)
 ```
+
+Connection timeout can be set after init:
+
+```
+ d &libcurl.init
+ do
+ . n $et s $et="set $ec="""""
+ . d &libcurl.conTimeoutMS(1)
+ . s status=$&libcurl.do(.sss,.zzz,"GET","https://example.com")
+ d &libcurl.cleanup
+```
+
+`sss` will contain the [libcurl error as a negative number](https://curl.se/libcurl/c/libcurl-errors.html), and `zzz` will contain the texual description of the error.
 
 ### Receiving Response Headers
 A reference variable can be added as the 8th parameter to receive the headers.
@@ -207,12 +221,24 @@ To trust a specific certificate, using `.serverCA`, e.g.:
 ```
 
 ## Error Codes
-There are seen only if you call libcurl as an extrinsic function, and trap the
-M error that is caused when it returns with a non-zero code.
+The only way to trap errors is with an M error trap, as an error status runs the error trap. In the example below, `status` actaully NEVER gets set, but both `sss` and `zzz` do get set.
+
+```
+ d &libcurl.init
+ do
+ . n $et s $et="set $ec="""""
+ . d &libcurl.conTimeoutMS(1)
+ . s status=$&libcurl.do(.sss,.zzz,"GET","https://example.com")
+ d &libcurl.cleanup
+```
+
+`sss` is either:
 
  * 0 - Everything is okay
  * 255 - Data or Header overflow error (greater than 1 MB in size)
- * 1-93: libcurl errors described here: https://curl.haxx.se/libcurl/c/libcurl-errors.html.
+ * -1 to -93: libcurl errors described here: https://curl.haxx.se/libcurl/c/libcurl-errors.html.
+
+`zzz` is a texual description of `sss`.
 
 ## External Dependencies
 This one is pretty obvious: This library uses libcurl; and runs on GT.M or YottaDB.

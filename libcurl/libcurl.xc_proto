@@ -6,3 +6,4 @@ clientTLS:  gtm_status_t curl_client_tls(I:gtm_char_t*, I:gtm_char_t*, I:gtm_cha
 serverCA:   gtm_status_t curl_server_ca(I:gtm_char_t*)
 do:         gtm_status_t curl_do(O:gtm_long_t*, O:gtm_string_t* [1048576], I:gtm_char_t*, I:gtm_char_t*, I:gtm_string_t*, I:gtm_char_t*, I:gtm_long_t, O:gtm_string_t* [32768], I:gtm_string_t*)
 curl:       gtm_status_t curl(O:gtm_long_t*, O:gtm_string_t* [1048576], I:gtm_char_t*, I:gtm_char_t*, I:gtm_string_t*, I:gtm_char_t*, I:gtm_long_t, O:gtm_string_t* [32768], I:gtm_string_t*)
+conTimeoutMS: gtm_status_t curl_connect_timeout_ms(I:long)

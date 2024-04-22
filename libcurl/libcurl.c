@@ -164,6 +164,12 @@ gtm_status_t curl_auth(int argc, gtm_char_t *auth_type, gtm_char_t *unpw)
   return (gtm_status_t)0;
 }
 
+gtm_status_t curl_connect_timeout_ms(int argc, long ms)
+{
+  curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT_MS, ms);
+  return (gtm_status_t)0;
+}
+
 /* Perform the curl operation */
 /* Return: 
  *   0 - ok,
@@ -278,7 +284,15 @@ gtm_status_t curl_do(int argc,
     }
   }
   else {
-    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(curl_result));
+    const char *error;
+
+    error = curl_easy_strerror(curl_result);
+    output->length = strlen(error);
+    memcpy(output->address, error, output->length);
+    // https://curl.se/libcurl/c/libcurl-errors.html
+    // But NEGATIVE
+    *http_status = -1 * (long)curl_result;
+
   }
 
   /* setting freed mem to NULL isn't necessary, but it will help me avoid
